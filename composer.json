@@ -1,0 +1,5 @@
+{
+    "require": {
+        "vanderlee/syllable": "^1.7"
+    }
+}
