@@ -8,14 +8,18 @@ use Vanderlee\Syllable\Syllable;
 Syllable::setCacheDir(kirby()->root('cache'));
 
 Kirby::plugin('medienbaecker/hyphenate', [
+  'options' => [
+    'minWordLength' => 10,
+    'language' => function () {
+      return kirby()->language() ? kirby()->language()->code() : 'en';
+    }
+  ],
   'hooks' => [
     'kirbytext:after' => function (string|null $text) {
-
-      $syllable = new Syllable('de');
-      $syllable->setMinWordLength(10);
+      $syllable = new Syllable(option('medienbaecker.hyphenate.language'));
+      $syllable->setMinWordLength(option('medienbaecker.hyphenate.minWordLength'));
 
       return $syllable->hyphenateText($text);
-
     }
   ]
 ]);
