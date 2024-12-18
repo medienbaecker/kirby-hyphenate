@@ -11,7 +11,7 @@ Syllable::setCacheDir(kirby()->root('cache'));
 Kirby::plugin('medienbaecker/hyphenate', [
   'options' => [
     'minWordLength' => 10,
-    'language' => Str::replace(kirby()->language()->locale()[0], '_', '-') ?? 'en-gb'
+    'language' => Str::replace(kirby()->language()->locale()[0] ?? 'en-gb', '_', '-')
   ],
   'hooks' => [
     'kirbytext:after' => function (string|null $text) {
