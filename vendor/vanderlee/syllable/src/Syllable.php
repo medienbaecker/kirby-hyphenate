@@ -54,6 +54,7 @@ class Syllable
     private $patterns = null;
     private $maxPattern = null;
     private $hyphenation = null;
+    private $userHyphenations = array();
 
     /**
      * Character encoding to use.
@@ -80,12 +81,12 @@ class Syllable
     public function __construct($language = 'en-us', $hyphen = null)
     {
         if (!self::$cacheDir) {
-            self::$cacheDir = __DIR__.'/../cache';
+            self::$cacheDir = __DIR__ . '/../cache';
         }
         $this->setCache(new Json(self::$cacheDir));
 
         if (!self::$languageDir) {
-            self::$languageDir = __DIR__.'/../languages';
+            self::$languageDir = __DIR__ . '/../languages';
         }
 
         $this->setLanguage($language);
@@ -135,6 +136,19 @@ class Syllable
     {
         $this->language = $language;
         $this->setSource(new File($language, self::$languageDir));
+    }
+
+    /**
+     * Add custom hyphenation patterns for words using a '-' to explicitly specify hyphenation (if any)
+     * @param array $hyphenations
+     * @return void
+     */
+    public function addHyphenations(array $hyphenations)
+    {
+        foreach ($hyphenations as $pattern) {
+            $word = str_replace('-', '', $pattern);
+            $this->userHyphenations[$word] = $pattern;
+        }
     }
 
     /**
@@ -237,13 +251,15 @@ class Syllable
         if ($cache !== null) {
             $cache->open($this->language);
 
-            if (isset($cache->version)
+            if (
+                isset($cache->version)
                 && $cache->version == self::CACHE_VERSION
                 && isset($cache->patterns)
                 && isset($cache->max_pattern)
                 && isset($cache->hyphenation)
                 && isset($cache->left_min_hyphen)
-                && isset($cache->right_min_hyphen)) {
+                && isset($cache->right_min_hyphen)
+            ) {
                 $this->patterns = $cache->patterns;
                 $this->maxPattern = $cache->max_pattern;
                 $this->hyphenation = $cache->hyphenation;
@@ -297,7 +313,7 @@ class Syllable
     public function excludeElement($elements)
     {
         foreach ((array) $elements as $element) {
-            $this->excludes[] = '//'.$element;
+            $this->excludes[] = '//' . $element;
         }
     }
 
@@ -312,7 +328,7 @@ class Syllable
         $value = $value === null ? '' : "='$value'";
 
         foreach ((array) $attributes as $attribute) {
-            $this->excludes[] = '//*[@'.$attribute.$value.']';
+            $this->excludes[] = '//*[@' . $attribute . $value . ']';
         }
     }
 
@@ -336,7 +352,7 @@ class Syllable
     public function includeElement($elements)
     {
         foreach ((array) $elements as $elements) {
-            $this->includes[] = '//'.$elements;
+            $this->includes[] = '//' . $elements;
         }
     }
 
@@ -353,7 +369,7 @@ class Syllable
             : "='$value'";
 
         foreach ((array) $attributes as $attribute) {
-            $this->includes[] = '//*[@'.$attribute.$value.']';
+            $this->includes[] = '//*[@' . $attribute . $value . ']';
         }
     }
 
@@ -463,7 +479,7 @@ class Syllable
             }
         }
 
-        $parts[] = $part.mb_substr($text, $textPosition);
+        $parts[] = $part . mb_substr($text, $textPosition);
 
         return $parts;
     }
@@ -536,12 +552,12 @@ class Syllable
     {
         $charset = mb_detect_encoding($html);
         list($bodyContent, $beforeBodyContent, $afterBodyContent) = $this->parseHtmlText($html);
-        $html = "<!DOCTYPE html PUBLIC '-//W3C//DTD HTML 4.0 Transitional//EN' 'http://www.w3.org/TR/REC-html40/loose.dtd'>".
-            '<html>'.
-                '<head>'.
-                    "<meta http-equiv='content-type' content='text/html; charset=$charset'>".
-                '</head>'.
-                "<body>$bodyContent</body>".
+        $html = "<!DOCTYPE html PUBLIC '-//W3C//DTD HTML 4.0 Transitional//EN' 'http://www.w3.org/TR/REC-html40/loose.dtd'>" .
+            '<html>' .
+            '<head>' .
+            "<meta http-equiv='content-type' content='text/html; charset=$charset'>" .
+            '</head>' .
+            "<body>$bodyContent</body>" .
             '</html>';
 
         $dom = new DOMDocument();
@@ -557,7 +573,7 @@ class Syllable
 
         $hyphenatedBodyContent = $dom->saveHTML($dom->getElementsByTagName('body')->item(0));
         $hyphenatedBodyContent = mb_substr($hyphenatedBodyContent, mb_strlen('<body>'), -mb_strlen('</body>'));
-        $hyphenatedHtml = $beforeBodyContent.$hyphenatedBodyContent.$afterBodyContent;
+        $hyphenatedHtml = $beforeBodyContent . $hyphenatedBodyContent . $afterBodyContent;
 
         return $hyphenatedHtml;
     }
@@ -746,27 +762,36 @@ class Syllable
      */
     private function parseWord($word)
     {
+
+        // Check for soft hyphen (U+00AD)
+        if (mb_strpos($word, "\u{00AD}") !== false) {
+            return [$word];
+        }
+
         $wordLength = mb_strlen($word);
 
-        if ($wordLength < $this->minHyphenLeft + $this->minHyphenRight
-            || $wordLength < $this->minWordLength) {
+        if (
+            $wordLength < $this->minHyphenLeft + $this->minHyphenRight
+            || $wordLength < $this->minWordLength
+        ) {
             return [$word];
         }
 
         $wordLowerCased = mb_strtolower($word);
 
-        if (isset($this->hyphenation[$wordLowerCased])) {
-            return $this->parseWordByHyphenation($word, $wordLowerCased);
-        } else {
-            return $this->parseWordByPatterns($word, $wordLength, $wordLowerCased);
+        if (isset($this->userHyphenations[$wordLowerCased])) {
+            return $this->parseWordByHyphenation($this->userHyphenations[$wordLowerCased], $word, $wordLowerCased);
         }
+
+        if (isset($this->hyphenation[$wordLowerCased])) {
+            return $this->parseWordByHyphenation($this->hyphenation[$wordLowerCased], $word, $wordLowerCased);
+        }
+
+        return $this->parseWordByPatterns($word, $wordLength, $wordLowerCased);
     }
 
-    private function parseWordByHyphenation($word, $wordLowerCased = null)
+    private function parseWordByHyphenation($hyphenation, $word, $wordLowerCased = null)
     {
-        $wordLowerCased = $wordLowerCased ?: mb_strtolower($word);
-
-        $hyphenation = $this->hyphenation[$wordLowerCased];
         $hyphenationLength = mb_strlen($hyphenation);
 
         $parts = [];
@@ -792,7 +817,7 @@ class Syllable
         $wordLowerCased = $wordLowerCased ?: mb_strtolower($word);
 
         // Convenience array
-        $text = '.'.$wordLowerCased.'.';
+        $text = '.' . $wordLowerCased . '.';
         $textLength = $wordLength + 2;
         $patternLength = $this->maxPattern < $textLength
             ? $this->maxPattern
@@ -813,8 +838,10 @@ class Syllable
                     $scoresLength = $length + 1;
                     for ($offset = 0; $offset < $scoresLength; $offset++) {
                         $score = $scores[$offset];
-                        if (!isset($before[$start + $offset])
-                            || $score > $before[$start + $offset]) {
+                        if (
+                            !isset($before[$start + $offset])
+                            || $score > $before[$start + $offset]
+                        ) {
                             $before[$start + $offset] = $score;
                         }
                     }

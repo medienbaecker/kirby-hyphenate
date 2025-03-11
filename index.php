@@ -19,7 +19,7 @@ Kirby::plugin('medienbaecker/hyphenate', [
       $syllable = new Syllable(option('medienbaecker.hyphenate.language'));
       $syllable->setMinWordLength(option('medienbaecker.hyphenate.minWordLength'));
 
-      return $syllable->hyphenateText($text);
+      return $syllable->hyphenateHtmlText($text);
     }
   ]
 ]);

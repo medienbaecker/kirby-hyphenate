@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "vanderlee/syllable",
-            "version": "1.7.0-p1",
+            "version": "1.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vanderlee/phpSyllable.git",
-                "reference": "0431d5c1041d2f236da67d7cd05a72e9cc422710"
+                "reference": "9077602434a8a393f1b76c8b84edca75c619c040"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vanderlee/phpSyllable/zipball/0431d5c1041d2f236da67d7cd05a72e9cc422710",
-                "reference": "0431d5c1041d2f236da67d7cd05a72e9cc422710",
+                "url": "https://api.github.com/repos/vanderlee/phpSyllable/zipball/9077602434a8a393f1b76c8b84edca75c619c040",
+                "reference": "9077602434a8a393f1b76c8b84edca75c619c040",
                 "shasum": ""
             },
             "require": {
@@ -60,16 +60,16 @@
                 "issues": "https://github.com/vanderlee/phpSyllable/issues",
                 "source": "https://github.com/vanderlee/phpSyllable/"
             },
-            "time": "2023-05-26T08:38:23+00:00"
+            "time": "2025-01-13T19:15:02+00:00"
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": [],
+    "platform": {},
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }
